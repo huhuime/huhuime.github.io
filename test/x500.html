@@ -1,0 +1,89 @@
+<html>
+<head>
+	<title>x500</title>
+	<script src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+	<style type="text/css">
+body {background: #36A579;}
+.meteor::after{background-color:#333;width:40px;height:5px;position:fixed;content:'';margin-left:-30px;}
+.meteor{position:fixed;top:-30px;right:-75px;background-color:#444;width:50px;height:3px;-moz-transform:rotate(-25deg);-webkit-transform:rotate(-25deg);-o-transform:rotate(-25deg);-ms-transform:rotate(-25deg);transform:rotate(-25deg);z-index:-9999;}
+.meteor::before{background-color:#666;width:30px;height:2px;position:fixed;content:'';margin-left:50px;}
+@-webkit-keyframes meteor0{0%{-webkit-transform:rotate(-25deg) translateX(0px);}
+100%{-webkit-transform:rotate(-25deg) translateX(-2000px);}
+}@-moz-keyframes meteor0{0%{-moz-transform:rotate(-25deg) translateX(0px);}
+100%{-moz-transform:rotate(-25deg) translateX(-2000px);}
+}@-ms-keyframes meteor0{0%{-ms-transform:rotate(-25deg) translateX(0px);}
+100%{-ms-transform:rotate(-25deg) translateX(-2000px);}
+}@keyframes meteor0{0%{transform:rotate(-25deg) translateX(0px);}
+100%{transform:rotate(-25deg) translateX(-2000px);}
+}@-webkit-keyframes meteor1{0%{-webkit-transform:rotate(-25deg) translateX(0px);}
+100%{-webkit-transform:rotate(-25deg) translateX(-2000px);}
+}@-moz-keyframes meteor1{0%{-moz-transform:rotate(-25deg) translateX(0px);}
+100%{-moz-transform:rotate(-25deg) translateX(-2000px);}
+}@-ms-keyframes meteor1{0%{-ms-transform:rotate(-25deg) translateX(0px);}
+100%{-ms-transform:rotate(-25deg) translateX(-2000px);}
+}@keyframes meteor1{0%{transform:rotate(-25deg) translateX(0px);}
+100%{transform:rotate(-25deg) translateX(-2000px);}
+}/*.msg{background-color:#DD3D36;position:fixed;top:30%;padding:10px;margin:0;width:100%;left:0;color:#fff;text-align:center;font-size:50px;}
+.msg p{font-size:20px;margin-top:0;}
+.msg a{font-size:25px;color:#fff;border:1px solid #fff;padding:5px;text-decoration:inherit;}
+.msg a:hover{color:#DD3D36;background-color:#fff;}
+*//*#1E8CBE*/
+#meteors{position:fixed;z-index:-99;}
+#meteors[paused="true"] *{-webkit-animation-play-state:paused;animation-play-state:paused;}
+	</style>
+	<script type="text/javascript">
+(function show_meteor($, document, random) {
+	'use strict';
+	var num, mtop, mright, maxtmp, tmp, css, prop, animation, meteors;
+	if (document.getElementById('meteors')) return;
+	//opinions
+	num = 500;
+	mtop = -30 + 'px';
+	mright = -75 + 'px';
+	//maxtmp = 550;
+	//tmp = random() * 100;
+	var maxright=500,
+	maxtop=800,
+	max=maxright+maxtop;
+	//opinions end
+	css = function (node) {
+		/*var style = node.style;
+		if ((tmp += random() * 100 >> 0) > maxtmp) tmp = 0;
+		random() > 0.5 ? (style.top = mtop, style.right = tmp-75 + 'px') : (style.top = tmp-30 + 'px', style.right = mright);
+		style[animation] = 'meteor' + ((node.go = !node.go) ? 1 : 0) + ' 2.' + (random() * 1000 >> 0) + 's ease-out .' + (random() * 1000 >> 0) + 's';
+		var otmp= random() * 10 >> 0
+		style.opacity=otmp/10;*/
+		var style = node.style;
+		tmp=(random() * max >> 0)-maxtop;
+		tmp <0 ? (style.top = mtop, style.right = -tmp-75 + 'px') : (style.top = tmp-30 + 'px', style.right = mright);
+		style[animation] = 'meteor' + ((node.go = !node.go) ? 1 : 0) + ' 2.' + (random() * 1000 >> 0) + 's ease-out ' + (random() * 1900 >> 0)/1000 + 's';
+		style.opacity=(random() * 10 >> 0)/10;
+	};
+	prop = (function getPrefix() {
+		for (var prefixes = ['webkit', 'moz', 'ms', 'o'], i = prefixes.length - 1; i > -1; --i) if ((prefixes[i] + 'Hidden') in document) return prefixes[i];
+	}()) || '';
+	animation = ($.style(meteors = $('<div id="meteors" unselectable="on"></div>').css({
+		'pointer-events': 'none',
+		'user-select': 'none',
+	}).get(0), 'animation'), $.cssProps.animation);
+	meteors.innerHTML = (function () {
+		var r, l, t = '<span class="meteor"></span>', res = '';
+		'1' === (r = num.toString(2)).charAt(l = r.length - 1) && (res += t);
+		while (l--) t += t, '1' === r.charAt(l) && (res += t);
+		return res;
+	}());
+	[].forEach.call(meteors.children, css);
+	document.addEventListener(prop + 'visibilitychange', function () {
+		meteors.setAttribute('paused', document[prop]);
+	});
+	meteors.addEventListener(('moz' === prop || '' === prop) ? 'animationend' : prop + 'AnimationEnd', function (e) {
+		css(e.target);
+	});
+	meteors.setAttribute('paused', document[prop += '' === prop ? 'hidden' : 'Hidden']);
+	document.documentElement.appendChild(meteors);
+}($, document, Math.random));
+	</script>
+</head>
+<body>
+</body>
+</html>
