@@ -1,116 +1,130 @@
-<!DOCTYPE html>  
-<html xmlns="http://www.w3.org/1999/xhtml">  
-<head>  
-    <title>HTML5 GetUserMedia Demo</title>  
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />  
-</head>  
-<body>  
-    <input type="button" title="开启摄像头" value="开启摄像头" onclick="getMedia();" /><br />  
-    <video height="120px" autoplay="autoplay"></video><hr />  
-    <input type="button" title="拍照" value="拍照" onclick="getPhoto();" /><br />  
-    <canvas id="canvas1" height="120px" ></canvas><hr />  
-    <input type="button" title="视频" value="视频" onclick="getVedio();" /><br />  
-    <canvas id="canvas2" height="120px"></canvas>  
-  
-    <script type="text/javascript">  
-        var video = document.querySelector('video');  
-        var audio, audioType;  
-  
-        var canvas1 = document.getElementById('canvas1');  
-        var context1 = canvas1.getContext('2d');  
-  
-        var canvas2 = document.getElementById('canvas2');  
-        var context2 = canvas2.getContext('2d');  
-  
-        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;  
-        window.URL = window.URL || window.webkitURL || window.mozURL || window.msURL;  
-  
-        var exArray = []; //存储设备源ID  
-        MediaStreamTrack.getSources(function (sourceInfos) {  
-            for (var i = 0; i != sourceInfos.length; ++i) {  
-                var sourceInfo = sourceInfos[i];  
-                //这里会遍历audio,video，所以要加以区分  
-                if (sourceInfo.kind === 'video') {  
-                    exArray.push(sourceInfo.id);  
-                }  
-            }  
-        });  
-  
-        function getMedia() {  
-            if (navigator.getUserMedia) {  
-                navigator.getUserMedia({  
-                    'video': {  
-                        'optional': [{  
-                            'sourceId': exArray[1] //0为前置摄像头，1为后置  
-                        }]  
-                    },  
-                    'audio':true  
-                }, successFunc, errorFunc);    //success是获取成功的回调函数  
-            }  
-            else {  
-                alert('Native device media streaming (getUserMedia) not supported in this browser.');  
-            }  
-        }  
-  
-        function successFunc(stream) {  
-            //alert('Succeed to get media!');  
-            if (video.mozSrcObject !== undefined) {  
-                //Firefox中，video.mozSrcObject最初为null，而不是未定义的，我们可以靠这个来检测Firefox的支持  
-                video.mozSrcObject = stream;  
-            }  
-            else {  
-                video.src = window.URL && window.URL.createObjectURL(stream) || stream;  
-            }  
-  
-            //video.play();  
-  
-            // 音频  
-            audio = new Audio();  
-            audioType = getAudioType(audio);  
-            if (audioType) {  
-                audio.src = 'polaroid.' + audioType;  
-                audio.play();  
-            }  
-        }  
-        function errorFunc(e) {  
-            alert('Error！'+e);  
-        }  
-  
-          
-        // 将视频帧绘制到Canvas对象上,Canvas每60ms切换帧，形成肉眼视频效果  
-        function drawVideoAtCanvas(video,context) {  
-            window.setInterval(function () {  
-                context.drawImage(video, 0, 0,90,120);  
-            }, 60);  
-        }  
-  
-        //获取音频格式  
-        function getAudioType(element) {  
-            if (element.canPlayType) {  
-                if (element.canPlayType('audio/mp4; codecs="mp4a.40.5"') !== '') {  
-                    return ('aac');  
-                } else if (element.canPlayType('audio/ogg; codecs="vorbis"') !== '') {  
-                    return ("ogg");  
-                }  
-            }  
-            return false;  
-        }  
-  
-        // vedio播放时触发，绘制vedio帧图像到canvas  
-//        video.addEventListener('play', function () {  
-//            drawVideoAtCanvas(video, context2);  
-//        }, false);  
-  
-        //拍照  
-        function getPhoto() {  
-            context1.drawImage(video, 0, 0,90,120); //将video对象内指定的区域捕捉绘制到画布上指定的区域，实现拍照。  
-        }  
-  
-        //视频  
-        function getVedio() {  
-            drawVideoAtCanvas(video, context2);  
-        }  
-  
-    </script>  
-</body>  
-</html> 
+<input type="hidden" name="imgValue" id="imgValue" /> 
+<button id="btnOpen1" class="btn btn-default" type="button" >Open WebCam</button> 
+<select id="videoSource" ></select> 
+
+
+<div id="vdoOne" style="display:none"> 
+	<video id="video" style="margin-top:15px;margin-bottom:15px;" width="300" autoplay></video> 
+	<canvas id="canvasPreview" style="margin-top:15px;" width="300" height="224"></canvas> 
+	<canvas id="canvasUpload" style="display:none;" width='300' height='224'></canvas> 
+	<button id="snap" class="btn btn-default" type="button">Snap Photo</button> 
+</div> 
+
+<script> 
+
+
+//// Elements for taking the snapshot 
+var canvasPreview = document.getElementById('canvasPreview'); 
+var canvasUpload = document.getElementById('canvasUpload'); 
+var contextPreview = canvasPreview.getContext('2d'); 
+var contextUpload = canvasUpload.getContext('2d'); 
+//#################### Video Source #######################3 
+var videoElement = document.querySelector('video'); 
+var videoSelect = document.querySelector('select#videoSource'); 
+
+navigator.mediaDevices.enumerateDevices() 
+.then(gotDevices).then(getStream).catch(handleError); 
+
+videoSelect.onchange = getStream; 
+
+function gotDevices(deviceInfos) { 
+	for (var i = 0; i < deviceInfos.length; ++i) { 
+		var deviceInfo = deviceInfos[i]; 
+		var option = document.createElement('option'); 
+		option.value = deviceInfo.deviceId; 
+		if (deviceInfo.kind === 'videoinput') { 
+			option.text = deviceInfo.label || 
+			'camera ' + 
+			(videoSelect.length + 1); 
+			videoSelect.appendChild(option); 
+		} else { 
+			console.log('Found ome other kind of source/device: ', deviceInfo); 
+		} 
+	} 
+} 
+
+var _streamCopy = null; 
+function getStream() { 
+	if (_streamCopy != null) { 
+		try { 
+		_streamCopy.stop(); // if this method doesn't exist, the catch will be executed. 
+		} catch (e) { 
+		_streamCopy.getVideoTracks()[0].stop(); // then stop the first video track of the stream 
+		} 
+	} 
+	var constraints = { 
+		audio:false, 
+		video: { 
+			optional: [ 
+			{ 
+				sourceId: videoSelect.value 
+			} 
+			] 
+		} 
+	}; 
+
+	navigator.mediaDevices.getUserMedia(constraints).then(gotStream).catch(handleError); 
+} 
+
+
+function gotStream(stream) { 
+	_streamCopy = stream; // make stream available to console 
+	videoElement.srcObject = stream; 
+} 
+
+
+function handleError(error) { 
+	alert(error.name + ": " + error.message); 
+} 
+
+
+//######################## End Video Source ################# 
+
+
+
+
+// Get access to the camera! 
+if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) { 
+	navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) { 
+		videoElement.src = window.URL.createObjectURL(stream); 
+		videoElement.play(); 
+
+
+	}); 
+} else { 
+	document.getElementById("pnlVideo1").style.display = "none"; 
+} 
+
+
+
+
+//// Trigger photo take 
+document.getElementById("snap").addEventListener("click", function() { 
+	contextPreview.drawImage(videoElement, 0, 0, 300, 224); 
+	contextUpload.drawImage(videoElement, 0, 0, 300, 224); 
+	document.getElementById("video").style.display = "none"; 
+	document.getElementById("snap").style.display = "none"; 
+	document.getElementById("canvasPreview").style.display = "block"; 
+
+
+	var image = document.getElementById("canvasUpload").toDataURL("image/jpeg"); 
+	image = image.replace('data:image/jpeg;base64,', ''); 
+	$("#imgValue").val(image); 
+
+	alert("image value :" + image); 
+}); 
+
+
+//// Trigger photo take 
+
+
+
+
+document.getElementById("btnOpen1").addEventListener("click", function() { 
+	document.getElementById("vdoOne").style.display = "block"; 
+	document.getElementById("video").style.display = "block"; 
+	document.getElementById("snap").style.display = "block"; 
+	document.getElementById("canvasPreview").style.display = "none"; 
+}); 
+
+    </script> 
